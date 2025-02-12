@@ -4,7 +4,7 @@ import matplotlib.animation as animation
 from scipy.sparse import diags
 from scipy.sparse.linalg import spsolve
 
-# Setting up high-quality plots
+# Makes plots visually better
 plt.rcParams["figure.dpi"] = 120
 plt.rcParams["figure.figsize"] = (8, 6)
 
@@ -60,7 +60,7 @@ def laplacian(U: np.ndarray) -> np.ndarray:
     U_new = spsolve(laplacian_2D, U_flat)
     return U_new.reshape(Nx, Ny)
 
-# Prepare animation data storage
+# Preparing animation data storage
 frames = []
 
 # Simulation loop
@@ -78,16 +78,16 @@ for t in range(Nt):
     # Computing diffusion using Crank-Nicolson (solving linear system)
     I = laplacian(I)
 
-    # Apply Neumann boundary conditions (zero-flux at edges)
+    # Applying Neumann boundary conditions (zero-flux at edges)
     S[0, :], S[-1, :], S[:, 0], S[:, -1] = S[1, :], S[-2, :], S[:, 1], S[:, -2]
     I[0, :], I[-1, :], I[:, 0], I[:, -1] = I[1, :], I[-2, :], I[:, 1], I[:, -2]
     R[0, :], R[-1, :], R[:, 0], R[:, -1] = R[1, :], R[-2, :], R[:, 1], R[:, -2]
 
-    # Store frames for animation (every 10 time steps to reduce lag)
-    if t % (Nt // 100) == 0:  # Store frames at regular intervals
+    # Storing frames for animation (every 10 time steps to reduce lag)
+    if t % (Nt // 100) == 0:  # Storing frames at regular intervals
         frames.append(I.copy())
 
-# Create the interactive animation
+# Creating animation
 fig, ax = plt.subplots()
 cmap = "plasma"
 img = ax.imshow(frames[0], cmap=cmap, origin="lower", extent=[0, L, 0, L], interpolation="bicubic")
