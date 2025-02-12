@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from scipy.sparse import diags
 from scipy.sparse.linalg import spsolve
 
-# Makes the plots visually better
+# Setting up high-quality plots
 plt.rcParams["figure.dpi"] = 120
 plt.rcParams["figure.figsize"] = (8, 6)
 
@@ -11,11 +12,12 @@ plt.rcParams["figure.figsize"] = (8, 6)
 L = 10.0  # Domain size
 Nx = Ny = 50  # Number of grid points
 dx = L / Nx  # Grid spacing
-dy = dx # Creating square grid
+dy = dx  # Creating square grid
 T = 10  # Total time
 dt = 0.01  # Time step
 Nt = int(T / dt)  # Number of time steps
 
+# Epidemiological parameters
 beta = 3.0  # Infection rate
 gamma = 1.0  # Recovery rate
 mu = 0.01  # Diffusion coefficient
@@ -44,7 +46,7 @@ laplacian_2D = diags(
     [side_diag, up_down_diag, main_diag, up_down_diag, side_diag], 
     [-1, -Nx, 0, Nx, 1],  # Adding up/down connectivity
     shape=(Nx * Ny, Nx * Ny),
-    format="csr" # Compressed Sparse Row format
+    format="csr"  # Compressed Sparse Row format
 )
 
 def laplacian(U: np.ndarray) -> np.ndarray:
@@ -57,6 +59,9 @@ def laplacian(U: np.ndarray) -> np.ndarray:
     U_flat = U.ravel()
     U_new = spsolve(laplacian_2D, U_flat)
     return U_new.reshape(Nx, Ny)
+
+# Prepare animation data storage
+frames = []
 
 # Simulation loop
 for t in range(Nt):
@@ -78,15 +83,23 @@ for t in range(Nt):
     I[0, :], I[-1, :], I[:, 0], I[:, -1] = I[1, :], I[-2, :], I[:, 1], I[:, -2]
     R[0, :], R[-1, :], R[:, 0], R[:, -1] = R[1, :], R[-2, :], R[:, 1], R[:, -2]
 
-    # Visualization at certain time steps
-    if t % (Nt // 10) == 0:
-        plt.figure()
-        plt.imshow(I, cmap="plasma", origin="lower", extent=[0, L, 0, L], interpolation="bicubic")
-        plt.colorbar(label="Infected Fraction", shrink=0.8)
-        plt.title(f"Infection Spread at t = {t * dt:.2f}", fontsize=14)
-        plt.xlabel("x (space)", fontsize=12)
-        plt.ylabel("y (space)", fontsize=12)
-        plt.xticks(fontsize=10)
-        plt.yticks(fontsize=10)
-        plt.grid(False)
-        plt.show()
+    # Store frames for animation (every 10 time steps to reduce lag)
+    if t % (Nt // 100) == 0:  # Store frames at regular intervals
+        frames.append(I.copy())
+
+# Create the interactive animation
+fig, ax = plt.subplots()
+cmap = "plasma"
+img = ax.imshow(frames[0], cmap=cmap, origin="lower", extent=[0, L, 0, L], interpolation="bicubic")
+plt.colorbar(img, ax=ax, label="Infected Fraction", shrink=0.8)
+ax.set_title("Infection Spread Over Time")
+ax.set_xlabel("x (space)")
+ax.set_ylabel("y (space)")
+
+def update(frame):
+    img.set_array(frames[frame])
+    ax.set_title(f"Infection Spread at t = {frame * (T / len(frames)):.2f}")
+    return [img]
+
+ani = animation.FuncAnimation(fig, update, frames=len(frames), interval=100, blit=False)
+plt.show()
