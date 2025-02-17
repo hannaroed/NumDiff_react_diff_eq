@@ -72,7 +72,8 @@ def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspre
         return U_new.reshape(Nx, Ny)
 
     frames = []
-    superspreader_x = Nx // 4 # Initial position of the superspreader
+    circle_radius = Nx // 5  # Radius of movement
+    center_x, center_y = Nx // 2, Ny // 2  # Center of circular path
 
     for t in range(Nt):
         # Compute reaction terms (explicit updates)
@@ -85,11 +86,13 @@ def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspre
         I += dI
         R += dR
 
-        # Moving superspreader every 20 time steps
-        if moving_superspreader and t % 20 == 0:
-            I[superspreader_x, Ny // 2] += 0.1 # Adding infection at new position
-            S[superspreader_x, Ny // 2] -= 0.1
-            superspreader_x = (superspreader_x + 1) % Nx # Move right
+        if moving_superspreader and t % 10 == 0:
+            theta = (t / 20) * (2 * np.pi / (Nt / 20)) # Angle for circular motion
+            superspreader_x = int(center_x + circle_radius * np.cos(theta)) % Nx
+            superspreader_y = int(center_y + circle_radius * np.sin(theta)) % Ny 
+            
+            I[superspreader_x, superspreader_y] += 0.1
+            S[superspreader_x, superspreader_y] -= 0.1
 
         # Computing diffusion using Crank-Nicolson (solving linear system)
         I = laplacian(I)
