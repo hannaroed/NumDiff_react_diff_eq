@@ -1,3 +1,4 @@
+# Imports
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -20,7 +21,7 @@ t = np.linspace(0, T, Nt)
 u = np.sin(np.pi * x)
 
 # Function for exact solution
-def exact_solution(x, t, mu):
+def exact_solution(x: np.ndarray, t: float, mu: float) -> np.ndarray:
     return np.exp(-mu * np.pi**2 * t) * np.sin(np.pi * x)
 
 # Time stepping using the numerical scheme (Implicit-Explicit Crank-Nicolson)

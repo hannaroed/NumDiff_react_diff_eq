@@ -1,10 +1,12 @@
+# Imports
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.sparse import diags
 from scipy.sparse.linalg import spsolve
+from typing import List, Tuple
 
-# Makes plots visually look better
+# Makes plots visually better
 plt.rcParams["figure.dpi"] = 120
 plt.rcParams["figure.figsize"] = (8, 6)
 
@@ -12,7 +14,7 @@ plt.rcParams["figure.figsize"] = (8, 6)
 L = 10.0  # Domain size
 Nx = Ny = 50  # Number of grid points
 dx = L / Nx  # Grid spacing
-dy = dx  # Creating square grid
+dy = dx  # Ensuring square grid
 T = 10  # Total time
 dt = 0.01  # Time step
 Nt = int(T / dt)  # Number of time steps
@@ -26,25 +28,27 @@ x = np.linspace(0, L, Nx)
 y = np.linspace(0, L, Ny)
 X, Y = np.meshgrid(x, y)
 
-def initialize_simulation(initial_infections):
+def initialize_simulation(initial_infections: List[Tuple[int, int]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Initializes the SIR model with given initial infection locations.
     """
-    S = np.ones((Nx, Ny))  # Everyone starts susceptible
-    I = np.zeros((Nx, Ny))  # No initial infections
-    R = np.zeros((Nx, Ny))  # No initial recoveries
+
+    S = np.ones((Nx, Ny)) # Everyone starts susceptible
+    I = np.zeros((Nx, Ny)) # No initial infections
+    R = np.zeros((Nx, Ny)) # No initial recoveries
 
     # Introduce infections based on the provided locations
     for loc in initial_infections:
         I[loc] = 0.1
-        S[loc] -= 0.1  # Ensure S + I + R = 1
+        S[loc] -= 0.1 # Ensure S + I + R = 1
 
     return S, I, R
 
-def run_simulation(S, I, R, moving_superspreader=False):
+def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspreader: bool = False) -> List[np.ndarray]:
     """
     Runs the SIR diffusion model, optionally with a moving superspreader.
     """
+
     # Creating the 2D Laplacian operator
     r = mu * dt / dx**2
     main_diag = (1 + 4 * r) * np.ones(Nx * Ny)  # Main diagonal
@@ -62,6 +66,7 @@ def run_simulation(S, I, R, moving_superspreader=False):
         """
         Apply the 2D Laplacian operator correctly.
         """
+
         U_flat = U.ravel()
         U_new = spsolve(laplacian_2D, U_flat)
         return U_new.reshape(Nx, Ny)
@@ -100,10 +105,11 @@ def run_simulation(S, I, R, moving_superspreader=False):
 
     return frames
 
-def show_animation(frames, title):
+def show_animation(frames: List[np.ndarray], title: str) -> None:
     """
     Creates an animation and displays it.
     """
+
     fig, ax = plt.subplots()
     cmap = "inferno"
     img = ax.imshow(frames[0], cmap=cmap, origin="lower", extent=[0, L, 0, L], interpolation="bicubic")
@@ -112,7 +118,7 @@ def show_animation(frames, title):
     ax.set_xlabel("x (space)")
     ax.set_ylabel("y (space)")
 
-    def update(frame):
+    def update(frame: int) -> List[plt.AxesImage]:
         img.set_array(frames[frame])
         ax.set_title(f"{title} at t = {frame * (T / len(frames)):.2f}")
         return [img]
