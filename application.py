@@ -11,17 +11,17 @@ plt.rcParams["figure.dpi"] = 120
 plt.rcParams["figure.figsize"] = (8, 6)
 
 # Setting parameters
-L = 10.0  # Domain size
-Nx = Ny = 50  # Number of grid points
-dx = L / Nx  # Grid spacing
-dy = dx  # Ensuring square grid
-T = 10  # Total time
-dt = 0.01  # Time step
-Nt = int(T / dt)  # Number of time steps
+L = 10.0 # Domain size
+Nx = Ny = 50 # Number of grid points
+dx = L / Nx # Grid spacing
+dy = dx # Ensuring square grid
+T = 10 # Total time
+dt = 0.01 # Time step
+Nt = int(T / dt) # Number of time steps
 
-beta = 3.0  # Infection rate
-gamma = 1.0  # Recovery rate
-mu = 0.01  # Diffusion coefficient
+beta = 3.0 # Infection rate
+gamma = 1.0 # Recovery rate
+mu = 0.01 # Diffusion coefficient
 
 # Creating spatial grid
 x = np.linspace(0, L, Nx)
@@ -39,7 +39,7 @@ def initialize_simulation(initial_infections: List[Tuple[int, int]]) -> Tuple[np
 
     # Introduce infections based on the provided locations
     for loc in initial_infections:
-        I[loc] = 0.1
+        I[loc] = 0.1 # Sets 10% of the population as infected
         S[loc] -= 0.1 # Ensure S + I + R = 1
 
     return S, I, R
@@ -50,16 +50,16 @@ def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspre
     """
 
     # Creating the 2D Laplacian operator
-    r = mu * dt / dx**2
-    main_diag = (1 + 4 * r) * np.ones(Nx * Ny)  # Main diagonal
-    side_diag = -r * np.ones(Nx * Ny - 1)  # Left/right neighbors
-    up_down_diag = -r * np.ones(Nx * Ny - Nx)  # Up/down neighbors
+    r = mu * dt / dx**2 # Diffusion coefficient
+    main_diag = (1 + 4 * r) * np.ones(Nx * Ny) # Main diagonal
+    side_diag = -r * np.ones(Nx * Ny - 1) # Left/right neighbors
+    up_down_diag = -r * np.ones(Nx * Ny - Nx) # Up/down neighbors
 
     laplacian_2D = diags(
         [side_diag, up_down_diag, main_diag, up_down_diag, side_diag], 
-        [-1, -Nx, 0, Nx, 1],  # Adding up/down connectivity
+        [-1, -Nx, 0, Nx, 1], # Adding up/down connectivity
         shape=(Nx * Ny, Nx * Ny),
-        format="csr"  # Compressed Sparse Row format
+        format="csr" # Compressed Sparse Row format
     )
 
     def laplacian(U: np.ndarray) -> np.ndarray:
@@ -72,7 +72,7 @@ def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspre
         return U_new.reshape(Nx, Ny)
 
     frames = []
-    superspreader_x = Nx // 4  # Initial position of the superspreader
+    superspreader_x = Nx // 4 # Initial position of the superspreader
 
     for t in range(Nt):
         # Compute reaction terms (explicit updates)
@@ -85,11 +85,11 @@ def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspre
         I += dI
         R += dR
 
-        # Move superspreader every 20 time steps
+        # Moving superspreader every 20 time steps
         if moving_superspreader and t % 20 == 0:
-            I[superspreader_x, Ny // 2] += 0.1  # Adding infection at new position
+            I[superspreader_x, Ny // 2] += 0.1 # Adding infection at new position
             S[superspreader_x, Ny // 2] -= 0.1
-            superspreader_x = (superspreader_x + 1) % Nx  # Move right
+            superspreader_x = (superspreader_x + 1) % Nx # Move right
 
         # Computing diffusion using Crank-Nicolson (solving linear system)
         I = laplacian(I)
@@ -118,7 +118,7 @@ def show_animation(frames: List[np.ndarray], title: str) -> None:
     ax.set_xlabel("x (space)")
     ax.set_ylabel("y (space)")
 
-    def update(frame: int) -> List[plt.AxesImage]:
+    def update(frame: int):
         img.set_array(frames[frame])
         ax.set_title(f"{title} at t = {frame * (T / len(frames)):.2f}")
         return [img]
