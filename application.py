@@ -143,3 +143,8 @@ show_animation(multi_frames, "Multiple Infection Sources")
 S, I, R = initialize_simulation([])
 superspreader_frames = run_simulation(S, I, R, moving_superspreader=True)
 show_animation(superspreader_frames, "Moving Superspreader")
+
+### Questions for student assistant:
+# 1. Hvor mange ulike modeller/eksempler er interresant å ha med?
+# 2. Hvor "kompliserte" modeller er forventet? Er det best med virkelighetsrelaterte eksempel eller bedre med fine former og slikt?
+# 3. Skal teori og applikasjon oppgavene ta opp like mye plass i rapporten?
