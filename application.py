@@ -148,3 +148,7 @@ show_animation(superspreader_frames, "Moving Superspreader")
 # 1. Hvor mange ulike modeller/eksempler er interresant å ha med?
 # 2. Hvor "kompliserte" modeller er forventet? Er det best med virkelighetsrelaterte eksempel eller bedre med fine former og slikt?
 # 3. Skal teori og applikasjon oppgavene ta opp like mye plass i rapporten?
+
+# Trenger ikkje nødvendigvis så mange eksempler, bare ha med så mye du har plass til etter du har skrevet teoridelen
+# Endre parametre og se hvor grensen går, se på forhold mellom beta og gamma og se hva som skjer, kanskje se på når smitten slutter å spre seg
+# Gjør teoridelen og bruk resten av plassen på application

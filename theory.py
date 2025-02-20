@@ -49,6 +49,11 @@ plt.title(f"Numerical vs Exact Solution (Error = {error:.6e})")
 plt.show()
 
 ### Questions for student assistant:
-# 1. Skal man verifisere bare convergence, eller heller vise consistency og stability og så si at det impliserer convergence (Lax equivalence)?
+# 1. Skal man verifisere bare convergence, eller heller vise consistency og stability og så si at det impliserer convergence (Lax equivalence)? 
 # 2. Evt om man skal plotte h, k -> 0 mot LTE -> 0 ?
 # 3. Evt plotte noe med a og se når a er utenfor stabilitet?
+
+
+# De 3 plotsene som skal være med:
+# plotte numerisk vs eksakt
+# plotte 2 stk log-log, ein for h og ein for k
