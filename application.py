@@ -94,7 +94,7 @@ def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspre
             I[superspreader_x, superspreader_y] += 0.1
             S[superspreader_x, superspreader_y] -= 0.1
 
-        # Computing diffusion using Crank-Nicolson (solving linear system)
+        # Diffusion step (implicit update)
         I = laplacian(I)
 
         # Apply Neumann boundary conditions (zero-flux at edges)

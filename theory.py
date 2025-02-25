@@ -49,7 +49,6 @@ def solve_reaction_diffusion(Nx: int, Nt: int, L: float, T: float, mu: float, f:
 
     # Tridiagonal matrix A
     A = np.diag(diag_main) + np.diag(diag_off, k=1) + np.diag(diag_off, k=-1)
-    print(f'A: {A}')
 
     # Perform LU factorization once (for efficiency)
     LU = scipy.linalg.lu_factor(A)
@@ -122,7 +121,6 @@ for j in range(len(Nt_values)):
 
     # Compute max error across all time steps
     error = np.max(np.abs(u_num2 - u_exact))
-
     errors_k[j] = error
 
 # Compute order of accuracy
