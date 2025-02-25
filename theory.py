@@ -4,6 +4,38 @@ import matplotlib.pyplot as plt
 import scipy.linalg
 from typing import Callable, Tuple
 from tqdm import trange
+from scipy.linalg import lapack
+
+
+def solve_banded_lapack(diag: np.ndarray, sub_sup_diag: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
+    """
+    Factorize a symmetric positive definite tridiagonal matrix A.
+    Return a function that will solve the system Ax = b for a given right-hand side b.
+    """
+    # From LAPACK docs:
+    # DPTTRF computes the L*D*L**T factorization of a real symmetric
+    # positive definite tridiagonal matrix A.  The factorization may also
+    # be regarded as having the form A = U**T*D*U.
+    diag_fact, sub_sup_fact, info = lapack.dpttrf(diag, sub_sup_diag, overwrite_d=0, overwrite_e=0)
+    if info != 0:
+        raise ValueError("LAPACK error in dpttrf")
+    
+    def tridiag_solve(b: np.ndarray) -> np.ndarray:
+        # From LAPACK docs:
+        # DPTTRS solves a tridiagonal system of the form
+        #    A * X = B
+        # using the L*D*L**T factorization of A computed by DPTTRF.  D is a
+        # diagonal matrix specified in the vector D, L is a unit bidiagonal
+        # matrix whose subdiagonal is specified in the vector E, and X and B
+        # are N by NRHS matrices.
+
+        x, info = lapack.dpttrs(diag_fact, sub_sup_fact, b)
+        if info != 0:
+            raise ValueError("LAPACK error in dpttrs")
+        return x
+    
+    return tridiag_solve
+
 
 # Defining parameters
 L = 1.0  # Domain size
@@ -62,13 +94,15 @@ def solve_reaction_diffusion(Nx: int, Nt: int, L: float, T: float, mu: float, f:
     u_final = np.zeros((Nt+1, Nx+1))
     u_final[0] = u  # Store initial condition
 
+    tridiag_solve = solve_banded_lapack(diag_main, diag_off)
+
     # Time stepping
     for n in range(1, Nt+1):
         u_inner = u[1:-1]  # Exclude boundaries
 
         # Predictor Step
         rhs = u_inner + (r / 2) * (u[:-2] - 2 * u_inner + u[2:]) + dt * f(u_inner)
-        u_star_inner = scipy.linalg.solve_banded((1, 1), A_banded, rhs)
+        u_star_inner = tridiag_solve(rhs)
 
         # Corrector Step
         u_new_inner = u_star_inner + (dt / 2) * (f(u_star_inner) - f(u_inner))
