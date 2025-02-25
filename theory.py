@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.linalg
 from typing import Callable, Tuple
+from tqdm import trange
 
 # Defining parameters
 L = 1.0  # Domain size
@@ -11,6 +12,7 @@ Nt = 2000 # Number of time steps
 T = 1.0  # Final time
 mu = 0.001  # Diffusion coefficient
 a = 0.5 # Reaction coefficient
+
 
 def exact_solution_test_case(x: np.ndarray, t: np.ndarray, mu: float, a: float, L: float) -> np.ndarray:
     """
@@ -48,10 +50,14 @@ def solve_reaction_diffusion(Nx: int, Nt: int, L: float, T: float, mu: float, f:
     diag_off = (-r / 2) * np.ones(Nx_inner - 1)
 
     # Tridiagonal matrix A
-    A = np.diag(diag_main) + np.diag(diag_off, k=1) + np.diag(diag_off, k=-1)
+    # A = np.diag(diag_main) + np.diag(diag_off, k=1) + np.diag(diag_off, k=-1)
+    A_banded = np.zeros((3, Nx_inner))
+    A_banded[0, 1:] = diag_off
+    A_banded[1, :] = diag_main
+    A_banded[2, :-1] = diag_off
+    # This is a banded matrix!
 
     # Perform LU factorization once (for efficiency)
-    LU = scipy.linalg.lu_factor(A)
 
     u_final = np.zeros((Nt+1, Nx+1))
     u_final[0] = u  # Store initial condition
@@ -62,7 +68,7 @@ def solve_reaction_diffusion(Nx: int, Nt: int, L: float, T: float, mu: float, f:
 
         # Predictor Step
         rhs = u_inner + (r / 2) * (u[:-2] - 2 * u_inner + u[2:]) + dt * f(u_inner)
-        u_star_inner = scipy.linalg.lu_solve(LU, rhs)
+        u_star_inner = scipy.linalg.solve_banded((1, 1), A_banded, rhs)
 
         # Corrector Step
         u_new_inner = u_star_inner + (dt / 2) * (f(u_star_inner) - f(u_inner))
@@ -100,7 +106,7 @@ Nx_values = np.array([10, 50, 100, 500, 1000], dtype=int) # Different spatial re
 # Compute errors for different spatial resolutions (h-convergence)
 errors_h = np.zeros_like(Nx_values, dtype=np.float32)
 
-for i in range(len(Nx_values)):
+for i in trange(len(Nx_values)):
     u_num1, _, _,x,t = solve_reaction_diffusion(Nx_values[i], Nt=10000, L=L, T=T, mu=mu, f=linear_reaction_test)
     u_exact = exact_solution_test_case(x, t, mu, a, L) 
 
@@ -115,7 +121,7 @@ Nt_values = np.array([10, 50, 100, 500, 1000], dtype=int)  # Different temporal 
 # Compute errors for different time step sizes (k-convergence)
 errors_k = np.zeros_like(Nt_values, dtype=np.float32)
 
-for j in range(len(Nt_values)):
+for j in trange(len(Nt_values)):
     u_num2, _, _, x, t = solve_reaction_diffusion(Nx=5000, Nt=Nt_values[j], L=L, T=T, mu=mu, f=linear_reaction_test)
     u_exact = exact_solution_test_case(x, t, mu, a, L)
 
