@@ -32,32 +32,33 @@ def solve_reaction_diffusion(Nx: int, Nt: int, L: float, T: float, mu: float, f:
     Solves a 1D reaction-diffusion equation u_t = mu u_xx + f(u)
     using a modified Crank-Nicolson scheme.
     """
-    dx = L / (Nx - 1)  # Spatial step size
+    dx = L / Nx  # Spatial step size
     dt = T / Nt  # Time step size
     r = (mu * dt) / (dx**2)  # Stability parameter
 
-    x = np.linspace(0, L, Nx) # Spatial grid
-    t = np.linspace(0, T, Nt)  # Temporal grid
+    x = np.linspace(0, L, Nx+1) # Spatial grid
+    t = np.linspace(0, T, Nt+1)  # Temporal grid
     u = np.sin(np.pi * x)  # Initial condition
     
     x_mesh, t_mesh = np.meshgrid(x, t)
 
     # Construct tridiagonal matrix for implicit system
-    Nx_inner = Nx - 2  # Exclude boundary points
+    Nx_inner = Nx - 1  # Exclude boundary points
     diag_main = (1 + r) * np.ones(Nx_inner)
     diag_off = (-r / 2) * np.ones(Nx_inner - 1)
 
     # Tridiagonal matrix A
     A = np.diag(diag_main) + np.diag(diag_off, k=1) + np.diag(diag_off, k=-1)
+    print(f'A: {A}')
 
     # Perform LU factorization once (for efficiency)
     LU = scipy.linalg.lu_factor(A)
 
-    u_final = np.zeros((Nt, Nx))
+    u_final = np.zeros((Nt+1, Nx+1))
     u_final[0] = u  # Store initial condition
 
     # Time stepping
-    for n in range(1, Nt):
+    for n in range(1, Nt+1):
         u_inner = u[1:-1]  # Exclude boundaries
 
         # Predictor Step
@@ -86,8 +87,8 @@ error = np.max(np.abs(u_num[-1] - u_exact[-1]))
 
 # Plot numerical vs exact solution
 plt.figure(figsize=(8, 5))
-plt.plot(x, u_num[50], label="Numerical Solution", linestyle="solid")
-plt.plot(x, u_exact[50], label="Exact Solution", linestyle="dashed")
+plt.plot(x, u_num[-1], label="Numerical Solution", linestyle="solid")
+plt.plot(x, u_exact[-1], label="Exact Solution", linestyle="dashed")
 plt.xlabel("x")
 plt.ylabel("u(x,T)")
 plt.legend()
@@ -95,14 +96,13 @@ plt.title(f"Numerical vs Exact Solution (Error = {error:.6e})")
 plt.show()
 
 # Convergence Analysis: Log-Log Plots for Error vs h and k
-Nx_values = np.array([10, 25, 63, 158, 398], dtype=int)  # Different spatial resolutions
-Nt_values = np.array([150, 937, 5953, 37446, 237606], dtype=int)  # Different temporal resolutions
+Nx_values = np.array([10, 50, 100, 500, 1000], dtype=int) # Different spatial resolutions
 
 # Compute errors for different spatial resolutions (h-convergence)
 errors_h = np.zeros_like(Nx_values, dtype=np.float32)
 
 for i in range(len(Nx_values)):
-    u_num1, _, _,x,t = solve_reaction_diffusion(Nx_values[i], Nt_values[i], L=L, T=T, mu=mu, f=linear_reaction_test)
+    u_num1, _, _,x,t = solve_reaction_diffusion(Nx_values[i], Nt=10000, L=L, T=T, mu=mu, f=linear_reaction_test)
     u_exact = exact_solution_test_case(x, t, mu, a, L) 
 
     # Compute max error across all time steps
@@ -111,11 +111,13 @@ for i in range(len(Nx_values)):
 
     errors_h[i] = error
 
+Nt_values = np.array([10, 50, 100, 500, 1000], dtype=int)  # Different temporal resolutions
+
 # Compute errors for different time step sizes (k-convergence)
 errors_k = np.zeros_like(Nt_values, dtype=np.float32)
 
 for j in range(len(Nt_values)):
-    u_num2, _, _, x, t = solve_reaction_diffusion(Nx=320, Nt=Nt, L=L, T=T, mu=mu, f=linear_reaction_test)
+    u_num2, _, _, x, t = solve_reaction_diffusion(Nx=5000, Nt=Nt_values[j], L=L, T=T, mu=mu, f=linear_reaction_test)
     u_exact = exact_solution_test_case(x, t, mu, a, L)
 
     # Compute max error across all time steps
@@ -124,8 +126,8 @@ for j in range(len(Nt_values)):
     errors_k[j] = error
 
 # Compute order of accuracy
-order_h = np.polyfit(np.log10(1/Nx_values), np.log10(errors_h), 1)[0]
-order_k = np.polyfit(np.log10(1/Nt_values), np.log10(errors_k), 1)[0]
+order_h = np.polyfit(np.log10(T/Nx_values), np.log10(errors_h), 1)[0]
+order_k = np.polyfit(np.log10(T/Nt_values), np.log10(errors_k), 1)[0]
 
 # Plot error vs. h (spatial resolution)
 plt.figure(figsize=(8, 5))
