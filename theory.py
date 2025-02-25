@@ -81,20 +81,11 @@ def solve_reaction_diffusion(Nx: int, Nt: int, L: float, T: float, mu: float, f:
     diag_main = (1 + r) * np.ones(Nx_inner)
     diag_off = (-r / 2) * np.ones(Nx_inner - 1)
 
-    # Tridiagonal matrix A
-    # A = np.diag(diag_main) + np.diag(diag_off, k=1) + np.diag(diag_off, k=-1)
-    A_banded = np.zeros((3, Nx_inner))
-    A_banded[0, 1:] = diag_off
-    A_banded[1, :] = diag_main
-    A_banded[2, :-1] = diag_off
-    # This is a banded matrix!
-
-    # Perform LU factorization once (for efficiency)
+    # Perform LDLt factorization once (for efficiency)
+    tridiag_solve = solve_banded_lapack(diag_main, diag_off)
 
     u_final = np.zeros((Nt+1, Nx+1))
     u_final[0] = u  # Store initial condition
-
-    tridiag_solve = solve_banded_lapack(diag_main, diag_off)
 
     # Time stepping
     for n in range(1, Nt+1):
