@@ -1,14 +1,14 @@
-# Imports
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from scipy.sparse import diags
 from scipy.sparse.linalg import spsolve
 from typing import List, Tuple
+from tqdm import trange
 
-# Makes plots visually better
-plt.rcParams["figure.dpi"] = 120
-plt.rcParams["figure.figsize"] = (8, 6)
+# Making plots visually better
+plt.rcParams["figure.dpi"] = 120 # High resolution display
+plt.rcParams["figure.figsize"] = (8, 6) # Default plot size
 
 # Setting parameters
 L = 10.0 # Domain size
@@ -21,7 +21,8 @@ Nt = int(T / dt) # Number of time steps
 
 beta = 3.0 # Infection rate
 gamma = 1.0 # Recovery rate
-mu = 0.01 # Diffusion coefficient
+mu_S = 0.01 # Diffusion coefficient for S
+mu_I = 0.02 # Diffusion coefficient for I
 
 # Creating spatial grid
 x = np.linspace(0, L, Nx)
@@ -32,7 +33,6 @@ def initialize_simulation(initial_infections: List[Tuple[int, int]]) -> Tuple[np
     """
     Initializes the SIR model with given initial infection locations.
     """
-
     S = np.ones((Nx, Ny)) # Everyone starts susceptible
     I = np.zeros((Nx, Ny)) # No initial infections
     R = np.zeros((Nx, Ny)) # No initial recoveries
@@ -44,43 +44,49 @@ def initialize_simulation(initial_infections: List[Tuple[int, int]]) -> Tuple[np
 
     return S, I, R
 
-def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspreader: bool = False) -> List[np.ndarray]:
+def create_laplacian(mu: float) -> diags:
     """
-    Runs the SIR diffusion model, optionally with a moving superspreader.
+    Creates a sparse 2D Laplacian operator for a given diffusion coefficient.
     """
-
-    # Creating the 2D Laplacian operator
-    r = mu * dt / dx**2 # Diffusion coefficient
+    r = mu * dt / dx**2 # Diffusion coefficient scaling
     main_diag = (1 + 4 * r) * np.ones(Nx * Ny) # Main diagonal
     side_diag = -r * np.ones(Nx * Ny - 1) # Left/right neighbors
     up_down_diag = -r * np.ones(Nx * Ny - Nx) # Up/down neighbors
 
-    laplacian_2D = diags(
-        [side_diag, up_down_diag, main_diag, up_down_diag, side_diag], 
-        [-1, -Nx, 0, Nx, 1], # Adding up/down connectivity
+    return diags(
+        [side_diag, up_down_diag, main_diag, up_down_diag, side_diag],
+        [-1, -Nx, 0, Nx, 1], # Connectivity
         shape=(Nx * Ny, Nx * Ny),
-        format="csr" # Compressed Sparse Row format
+        format="csr" # Compressed Sparse Row format for efficiency
     )
 
-    def laplacian(U: np.ndarray) -> np.ndarray:
-        """
-        Apply the 2D Laplacian operator correctly.
-        """
+def laplacian(U: np.ndarray, laplacian_matrix) -> np.ndarray:
+    """
+    Apply the 2D Laplacian operator with the specified matrix.
+    """
+    U_flat = U.ravel()
+    U_new = spsolve(laplacian_matrix, U_flat)
+    return U_new.reshape(Nx, Ny)
 
-        U_flat = U.ravel()
-        U_new = spsolve(laplacian_2D, U_flat)
-        return U_new.reshape(Nx, Ny)
+def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspreader: bool = False) -> List[np.ndarray]:
+    """
+    Runs the SIR diffusion model, with separate diffusion for S and I.
+    """
+
+    # Create separate Laplacian operators for S and I
+    laplacian_S = create_laplacian(mu_S)
+    laplacian_I = create_laplacian(mu_I)
 
     frames = []
-    circle_radius = Nx // 5  # Radius of movement
-    center_x, center_y = Nx // 2, Ny // 2  # Center of circular path
+    circle_radius = Nx // 5 # Radius of movement
+    center_x, center_y = Nx // 2, Ny // 2 # Center of circular path
 
-    for t in range(Nt):
+    for t in trange(Nt):
         # Compute reaction terms (explicit updates)
         dS = -beta * S * I * dt
         dI = (beta * S * I - gamma * I) * dt
         dR = gamma * I * dt
-        
+
         # Updating values with reaction terms
         S += dS
         I += dI
@@ -89,20 +95,21 @@ def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspre
         if moving_superspreader and t % 10 == 0:
             theta = (t / 20) * (2 * np.pi / (Nt / 20)) # Angle for circular motion
             superspreader_x = int(center_x + circle_radius * np.cos(theta)) % Nx
-            superspreader_y = int(center_y + circle_radius * np.sin(theta)) % Ny 
+            superspreader_y = int(center_y + circle_radius * np.sin(theta)) % Ny
             
             I[superspreader_x, superspreader_y] += 0.1
             S[superspreader_x, superspreader_y] -= 0.1
 
-        # Diffusion step (implicit update)
-        I = laplacian(I)
+        # Diffusion step (implicit updates)
+        S = laplacian(S, laplacian_S) # Apply diffusion for S
+        I = laplacian(I, laplacian_I) # Apply diffusion for I
 
         # Apply Neumann boundary conditions (zero-flux at edges)
         S[0, :], S[-1, :], S[:, 0], S[:, -1] = S[1, :], S[-2, :], S[:, 1], S[:, -2]
         I[0, :], I[-1, :], I[:, 0], I[:, -1] = I[1, :], I[-2, :], I[:, 1], I[:, -2]
         R[0, :], R[-1, :], R[:, 0], R[:, -1] = R[1, :], R[-2, :], R[:, 1], R[:, -2]
 
-        # Store frames for animation (every 10 time steps to reduce lag)
+        # Store frames for animation
         if t % (Nt // 100) == 0:
             frames.append(I.copy())
 
@@ -143,12 +150,3 @@ show_animation(multi_frames, "Multiple Infection Sources")
 S, I, R = initialize_simulation([])
 superspreader_frames = run_simulation(S, I, R, moving_superspreader=True)
 show_animation(superspreader_frames, "Moving Superspreader")
-
-### Questions for student assistant:
-# 1. Hvor mange ulike modeller/eksempler er interresant å ha med?
-# 2. Hvor "kompliserte" modeller er forventet? Er det best med virkelighetsrelaterte eksempel eller bedre med fine former og slikt?
-# 3. Skal teori og applikasjon oppgavene ta opp like mye plass i rapporten?
-
-# Trenger ikkje nødvendigvis så mange eksempler, bare ha med så mye du har plass til etter du har skrevet teoridelen
-# Endre parametre og se hvor grensen går, se på forhold mellom beta og gamma og se hva som skjer, kanskje se på når smitten slutter å spre seg
-# Gjør teoridelen og bruk resten av plassen på application
