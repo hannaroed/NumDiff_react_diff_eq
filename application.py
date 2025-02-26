@@ -19,7 +19,7 @@ T = 10 # Total time
 dt = 0.01 # Time step
 Nt = int(T / dt) # Number of time steps
 
-beta = 3.0 # Infection rate
+beta = 3.0 # Density rate
 gamma = 1.0 # Recovery rate
 mu_S = 0.01 # Diffusion coefficient for S
 mu_I = 0.02 # Diffusion coefficient for I
@@ -68,7 +68,7 @@ def laplacian(U: np.ndarray, laplacian_matrix) -> np.ndarray:
     U_new = spsolve(laplacian_matrix, U_flat)
     return U_new.reshape(Nx, Ny)
 
-def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, moving_superspreader: bool = False) -> List[np.ndarray]:
+def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, beta: float, gamma: float, moving_superspreader: bool = False) -> List[np.ndarray]:
     """
     Runs the SIR diffusion model, with separate diffusion for S and I.
     """
@@ -138,15 +138,42 @@ def show_animation(frames: List[np.ndarray], title: str) -> None:
 
 # Baseline model (single initial infection at the center)
 S, I, R = initialize_simulation([(Nx//2, Ny//2)])
-baseline_frames = run_simulation(S, I, R)
+baseline_frames = run_simulation(S, I, R, beta, gamma)
 show_animation(baseline_frames, "Baseline Infection Spread (single source)")
 
 # Multiple initial infection model
 S, I, R = initialize_simulation([(Nx//4, Ny//4), (3*Nx//4, 3*Ny//4), (Nx//2, Ny//2)])
-multi_frames = run_simulation(S, I, R)
+multi_frames = run_simulation(S, I, R, beta, gamma)
 show_animation(multi_frames, "Multiple Infection Sources")
 
 # Moving superspreader model
 S, I, R = initialize_simulation([])
-superspreader_frames = run_simulation(S, I, R, moving_superspreader=True)
+superspreader_frames = run_simulation(S, I, R, beta, gamma, moving_superspreader=True)
 show_animation(superspreader_frames, "Moving Superspreader")
+
+def plot_snapshots(frames, simulation_title):
+    """
+    Generates a static image showing four time snapshots of the given simulation.
+    """
+    snapshot_indices = [0, len(frames) // 3, 2 * len(frames) // 3, len(frames) - 1]
+    titles = ["Start", "Early", "Late", "End"]
+
+    fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+    cmap = "inferno"
+
+    for ax, idx, title in zip(axes, snapshot_indices, titles):
+        im = ax.imshow(frames[idx], cmap=cmap, origin="lower", extent=[0, L, 0, L], interpolation="bicubic")
+        ax.set_title(f"{simulation_title}\n{title}")
+        ax.set_xlabel("x (space)")
+        ax.set_ylabel("y (space)")
+
+    # Create a separate axis for the colorbar below all plots
+    cbar_ax = fig.add_axes([0.15, 0.08, 0.7, 0.03]) # [left, bottom, width, height]
+    fig.colorbar(im, cax=cbar_ax, label="Infected Fraction", orientation="horizontal")
+    plt.tight_layout(rect=[0, 0.1, 1, 1])
+    plt.show()
+
+# Generate snapshots for each simulation
+plot_snapshots(baseline_frames, "Baseline Infection Spread")
+plot_snapshots(multi_frames, "Multiple Infection Sources")
+plot_snapshots(superspreader_frames, "Moving Superspreader")
