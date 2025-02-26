@@ -68,7 +68,7 @@ def solve_reaction_diffusion(Nx: int, Nt: int, L: float, T: float, mu: float, f:
 
     x = np.linspace(0, L, Nx+1) # Spatial grid
     t = np.linspace(0, T, Nt+1) # Temporal grid
-    u = np.sin(np.pi * x) # Initial condition
+    u = np.sin(np.pi * x / L) # Initial condition
     
     x_mesh, t_mesh = np.meshgrid(x, t)
 
