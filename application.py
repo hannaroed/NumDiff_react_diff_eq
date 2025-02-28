@@ -157,33 +157,41 @@ mu_I = 0.02 # Diffusion coefficient for I
 # Baseline model (single initial infection at the center)
 S, I, R = initialize_simulation([(Nx//2, Ny//2)])
 baseline_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I)
-show_animation(baseline_frames, "Baseline Infection Spread (single source)")
+#show_animation(baseline_frames, "Baseline Infection Spread (single source)")
 
 # Baseline with large beta (faster spread)
 high_beta = 6.0
 S, I, R = initialize_simulation([(Nx//2, Ny//2)])
 beta_large_frames = run_simulation(S, I, R, high_beta, gamma, mu_S, mu_I)
-show_animation(beta_large_frames, "Baseline Infection Spread (large beta)")
+#show_animation(beta_large_frames, "Baseline Infection Spread (large β)")
 
 # Baseline with larger gamma (faster removal, beta = gamma)
 high_gamma = 3.0
 S, I, R = initialize_simulation([(Nx//2, Ny//2)])
 gamma_large_frames = run_simulation(S, I, R, beta, high_gamma, mu_S, mu_I)
-show_animation(gamma_large_frames, "Baseline Infection Spread (beta = gamma)")
+#show_animation(gamma_large_frames, "Baseline Infection Spread (β=γ)")
+
+# Baseline with infected diffusion slower than susceptible diffusion
+mu_S_slow = 0.005
+mu_I_fast = 0.1
+S, I, R = initialize_simulation([(Nx//2, Ny//2)])
+slow_diffusion_frames = run_simulation(S, I, R, beta, gamma, mu_S_slow, mu_I_fast)
+#show_animation(slow_diffusion_frames, "Baseline Infection Spread (high I diffusion)")
 
 # Multiple initial infection model
 S, I, R = initialize_simulation([(Nx//4, Ny//4), (3*Nx//4, 3*Ny//4), (Nx//2, Ny//2)])
 multi_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I)
-show_animation(multi_frames, "Multiple Infection Sources")
+#show_animation(multi_frames, "Multiple Infection Sources")
 
 # Moving superspreader model
 S, I, R = initialize_simulation([])
 superspreader_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I, moving_superspreader=True)
-show_animation(superspreader_frames, "Moving Superspreader")
+#show_animation(superspreader_frames, "Moving Superspreader")
 
 # Generate snapshots for each simulation
 plot_snapshots(baseline_frames, "Baseline Infection Spread")
 plot_snapshots(beta_large_frames, "Baseline Infection Spread (large β)")
 plot_snapshots(gamma_large_frames, "Baseline Infection Spread (β=γ)")
+plot_snapshots(slow_diffusion_frames, "Baseline Infection Spread (high I-diff.)")
 plot_snapshots(multi_frames, "Multiple Infection Sources")
 plot_snapshots(superspreader_frames, "Moving Superspreader")
