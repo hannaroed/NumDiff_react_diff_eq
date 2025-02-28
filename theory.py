@@ -57,13 +57,13 @@ def linear_reaction_test(u):
     """
     return a * u # Linear reaction term
 
-# Solver for reaction-diffusion equations
+# Solver for reaction-diffusion equation
 def solve_reaction_diffusion(Nx: int, Nt: int, L: float, T: float, mu: float, f: Callable[[np.ndarray], np.ndarray]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Solves reaction-diffusion equation u_t = mu*u_xx + f(u) using a modified Crank-Nicolson scheme.
     """
     dx = L / Nx # Spatial step size
-    dt = T / Nt # Time step size
+    dt = T / Nt # Temporal step size
     r = (mu * dt) / (dx**2) # Stability parameter
 
     x = np.linspace(0, L, Nx+1) # Spatial grid
@@ -119,7 +119,7 @@ plt.legend()
 plt.title(f"Numerical vs Exact Solution (Error = {error:.6e})")
 plt.show()
 
-# Convergence Analysis: h and k convergence
+### Convergence Analysis: h and k convergence
 
 Nx_values = np.array([10, 50, 100, 500, 1000], dtype=int) # Different spatial resolutions
 
@@ -171,5 +171,5 @@ plt.title("Convergence Plot: Error vs k")
 plt.grid(True)
 plt.show()
 
-# Print computed convergence rates
+# Print convergence rates
 order_h, order_k
