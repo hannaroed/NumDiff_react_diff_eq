@@ -1,3 +1,4 @@
+# Imports
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -104,7 +105,7 @@ def show_animation(frames: List[np.ndarray], title: str) -> None:
     fig, ax = plt.subplots()
     cmap = "inferno"
     img = ax.imshow(frames[0], cmap=cmap, origin="lower", extent=[0, L, 0, L], interpolation="bicubic")
-    plt.colorbar(img, ax=ax, label="Infected Fraction", shrink=0.8)
+    plt.colorbar(img, ax=ax, label="Infected Fraction")
     ax.set_title(title)
     ax.set_xlabel("x (space)")
     ax.set_ylabel("y (space)")
@@ -116,47 +117,6 @@ def show_animation(frames: List[np.ndarray], title: str) -> None:
 
     ani = animation.FuncAnimation(fig, update, frames=len(frames), interval=100, blit=False)
     plt.show()
-
-# Setting parameters
-L = 10.0 # Domain size
-Nx = Ny = 50 # Number of grid points
-dx = L / Nx # Grid spacing
-dy = dx # Ensuring square grid
-T = 10 # Total time
-dt = 0.01 # Time step
-Nt = int(T / dt) # Number of time steps
-
-beta = 3.0 # Transmission rate
-gamma = 1.0 # Removal rate
-mu_S = 0.01 # Diffusion coefficient for S
-mu_I = 0.02 # Diffusion coefficient for I
-
-# Baseline model (single initial infection at the center)
-S, I, R = initialize_simulation([(Nx//2, Ny//2)])
-baseline_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I)
-#show_animation(baseline_frames, "Baseline Infection Spread (single source)")
-
-# Baseline with large beta (faster spread)
-high_beta = 6.0
-S, I, R = initialize_simulation([(Nx//2, Ny//2)])
-beta_large_frames = run_simulation(S, I, R, high_beta, gamma, mu_S, mu_I)
-#show_animation(beta_large_frames, "Baseline Infection Spread (large beta)")
-
-# Baseline with larger gamma (faster recovery, beta = gamma)
-high_gamma = 3.0
-S, I, R = initialize_simulation([(Nx//2, Ny//2)])
-gamma_large_frames = run_simulation(S, I, R, beta, high_gamma, mu_S, mu_I)
-#show_animation(gamma_large_frames, "Baseline Infection Spread (beta = gamma)")
-
-# Multiple initial infection model
-S, I, R = initialize_simulation([(Nx//4, Ny//4), (3*Nx//4, 3*Ny//4), (Nx//2, Ny//2)])
-multi_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I)
-#show_animation(multi_frames, "Multiple Infection Sources")
-
-# Moving superspreader model
-S, I, R = initialize_simulation([])
-superspreader_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I, moving_superspreader=True)
-#show_animation(superspreader_frames, "Moving Superspreader")
 
 def plot_snapshots(frames: List[np.ndarray], simulation_title: str) -> None:
     """
@@ -180,9 +140,50 @@ def plot_snapshots(frames: List[np.ndarray], simulation_title: str) -> None:
     plt.tight_layout(rect=[0, 0.1, 1, 1])
     plt.show()
 
+# Setting parameters
+L = 10.0 # Domain size
+Nx = Ny = 50 # Number of grid points
+dx = L / Nx # Grid spacing
+dy = dx # Ensuring square grid
+T = 10 # Total time
+dt = 0.01 # Time step
+Nt = int(T / dt) # Number of time steps
+
+beta = 3.0 # Transmission rate
+gamma = 1.0 # Removal rate
+mu_S = 0.01 # Diffusion coefficient for S
+mu_I = 0.02 # Diffusion coefficient for I
+
+# Baseline model (single initial infection at the center)
+S, I, R = initialize_simulation([(Nx//2, Ny//2)])
+baseline_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I)
+show_animation(baseline_frames, "Baseline Infection Spread (single source)")
+
+# Baseline with large beta (faster spread)
+high_beta = 6.0
+S, I, R = initialize_simulation([(Nx//2, Ny//2)])
+beta_large_frames = run_simulation(S, I, R, high_beta, gamma, mu_S, mu_I)
+show_animation(beta_large_frames, "Baseline Infection Spread (large beta)")
+
+# Baseline with larger gamma (faster removal, beta = gamma)
+high_gamma = 3.0
+S, I, R = initialize_simulation([(Nx//2, Ny//2)])
+gamma_large_frames = run_simulation(S, I, R, beta, high_gamma, mu_S, mu_I)
+show_animation(gamma_large_frames, "Baseline Infection Spread (beta = gamma)")
+
+# Multiple initial infection model
+S, I, R = initialize_simulation([(Nx//4, Ny//4), (3*Nx//4, 3*Ny//4), (Nx//2, Ny//2)])
+multi_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I)
+show_animation(multi_frames, "Multiple Infection Sources")
+
+# Moving superspreader model
+S, I, R = initialize_simulation([])
+superspreader_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I, moving_superspreader=True)
+show_animation(superspreader_frames, "Moving Superspreader")
+
 # Generate snapshots for each simulation
 plot_snapshots(baseline_frames, "Baseline Infection Spread")
-plot_snapshots(beta_large_frames, "Baseline Infection Spread (large beta)")
-plot_snapshots(gamma_large_frames, "Baseline Infection Spread (beta = gamma)")
+plot_snapshots(beta_large_frames, "Baseline Infection Spread (large β)")
+plot_snapshots(gamma_large_frames, "Baseline Infection Spread (β=γ)")
 plot_snapshots(multi_frames, "Multiple Infection Sources")
 plot_snapshots(superspreader_frames, "Moving Superspreader")
