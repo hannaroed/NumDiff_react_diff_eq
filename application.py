@@ -10,25 +10,6 @@ from tqdm import trange
 plt.rcParams["figure.dpi"] = 120 # High resolution display
 plt.rcParams["figure.figsize"] = (8, 6) # Default plot size
 
-# Setting parameters
-L = 10.0 # Domain size
-Nx = Ny = 50 # Number of grid points
-dx = L / Nx # Grid spacing
-dy = dx # Ensuring square grid
-T = 10 # Total time
-dt = 0.01 # Time step
-Nt = int(T / dt) # Number of time steps
-
-beta = 3.0 # Density rate
-gamma = 1.0 # Recovery rate
-mu_S = 0.01 # Diffusion coefficient for S
-mu_I = 0.02 # Diffusion coefficient for I
-
-# Creating spatial grid
-x = np.linspace(0, L, Nx)
-y = np.linspace(0, L, Ny)
-X, Y = np.meshgrid(x, y)
-
 def initialize_simulation(initial_infections: List[Tuple[int, int]]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Initializes the SIR model with given initial infection locations.
@@ -60,7 +41,7 @@ def create_laplacian(mu: float) -> diags:
         format="csr" # Compressed Sparse Row format for efficiency
     )
 
-def laplacian(U: np.ndarray, laplacian_matrix) -> np.ndarray:
+def laplacian(U: np.ndarray, laplacian_matrix: diags) -> np.ndarray:
     """
     Apply the 2D Laplacian operator with the specified matrix.
     """
@@ -68,7 +49,7 @@ def laplacian(U: np.ndarray, laplacian_matrix) -> np.ndarray:
     U_new = spsolve(laplacian_matrix, U_flat)
     return U_new.reshape(Nx, Ny)
 
-def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, beta: float, gamma: float, moving_superspreader: bool = False) -> List[np.ndarray]:
+def run_simulation(S: np.ndarray, I: np.ndarray, R: np.ndarray, beta: float, gamma: float, mu_S: float, mu_I: float, moving_superspreader: bool = False) -> List[np.ndarray]:
     """
     Runs the SIR diffusion model, with separate diffusion for S and I.
     """
@@ -136,22 +117,48 @@ def show_animation(frames: List[np.ndarray], title: str) -> None:
     ani = animation.FuncAnimation(fig, update, frames=len(frames), interval=100, blit=False)
     plt.show()
 
+# Setting parameters
+L = 10.0 # Domain size
+Nx = Ny = 50 # Number of grid points
+dx = L / Nx # Grid spacing
+dy = dx # Ensuring square grid
+T = 10 # Total time
+dt = 0.01 # Time step
+Nt = int(T / dt) # Number of time steps
+
+beta = 3.0 # Transmission rate
+gamma = 1.0 # Removal rate
+mu_S = 0.01 # Diffusion coefficient for S
+mu_I = 0.02 # Diffusion coefficient for I
+
 # Baseline model (single initial infection at the center)
 S, I, R = initialize_simulation([(Nx//2, Ny//2)])
-baseline_frames = run_simulation(S, I, R, beta, gamma)
-show_animation(baseline_frames, "Baseline Infection Spread (single source)")
+baseline_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I)
+#show_animation(baseline_frames, "Baseline Infection Spread (single source)")
+
+# Baseline with large beta (faster spread)
+high_beta = 6.0
+S, I, R = initialize_simulation([(Nx//2, Ny//2)])
+beta_large_frames = run_simulation(S, I, R, high_beta, gamma, mu_S, mu_I)
+#show_animation(beta_large_frames, "Baseline Infection Spread (large beta)")
+
+# Baseline with larger gamma (faster recovery, beta = gamma)
+high_gamma = 3.0
+S, I, R = initialize_simulation([(Nx//2, Ny//2)])
+gamma_large_frames = run_simulation(S, I, R, beta, high_gamma, mu_S, mu_I)
+#show_animation(gamma_large_frames, "Baseline Infection Spread (beta = gamma)")
 
 # Multiple initial infection model
 S, I, R = initialize_simulation([(Nx//4, Ny//4), (3*Nx//4, 3*Ny//4), (Nx//2, Ny//2)])
-multi_frames = run_simulation(S, I, R, beta, gamma)
-show_animation(multi_frames, "Multiple Infection Sources")
+multi_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I)
+#show_animation(multi_frames, "Multiple Infection Sources")
 
 # Moving superspreader model
 S, I, R = initialize_simulation([])
-superspreader_frames = run_simulation(S, I, R, beta, gamma, moving_superspreader=True)
-show_animation(superspreader_frames, "Moving Superspreader")
+superspreader_frames = run_simulation(S, I, R, beta, gamma, mu_S, mu_I, moving_superspreader=True)
+#show_animation(superspreader_frames, "Moving Superspreader")
 
-def plot_snapshots(frames, simulation_title):
+def plot_snapshots(frames: List[np.ndarray], simulation_title: str) -> None:
     """
     Generates a static image showing four time snapshots of the given simulation.
     """
@@ -175,5 +182,7 @@ def plot_snapshots(frames, simulation_title):
 
 # Generate snapshots for each simulation
 plot_snapshots(baseline_frames, "Baseline Infection Spread")
+plot_snapshots(beta_large_frames, "Baseline Infection Spread (large beta)")
+plot_snapshots(gamma_large_frames, "Baseline Infection Spread (beta = gamma)")
 plot_snapshots(multi_frames, "Multiple Infection Sources")
 plot_snapshots(superspreader_frames, "Moving Superspreader")
